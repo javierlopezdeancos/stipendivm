@@ -1,5 +1,6 @@
 package inventory
 
+// ShippingOption Shipping option
 type ShippingOption struct {
 	ID     string `json:"id"`
 	Label  string `json:"label"`
@@ -7,6 +8,7 @@ type ShippingOption struct {
 	Amount int64  `json:"amount"`
 }
 
+// ShippingOptions Shipping options
 func ShippingOptions() []ShippingOption {
 	return []ShippingOption{
 		{
@@ -24,6 +26,7 @@ func ShippingOptions() []ShippingOption {
 	}
 }
 
+// GetShippingCost Get shipping cost
 func GetShippingCost(optionID string) (int64, bool) {
 	for _, option := range ShippingOptions() {
 		if option.ID == optionID {

@@ -3,7 +3,7 @@ package webhooks
 import (
 	"fmt"
 
-	"github.com/stripe/stripe-go"
+	"github.com/stripe/stripe-go/v72"
 
 	"github.com/javierlopezdeancos/stipendivm/payments"
 )

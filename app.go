@@ -13,13 +13,13 @@ import (
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 	"github.com/labstack/gommon/log"
-	"github.com/stripe/stripe-go"
-	"github.com/stripe/stripe-go/webhook"
-	"github.com/stripe/stripe-payments-demo/config"
-	"github.com/stripe/stripe-payments-demo/inventory"
-	"github.com/stripe/stripe-payments-demo/payments"
-	"github.com/stripe/stripe-payments-demo/setup"
-	"github.com/stripe/stripe-payments-demo/webhooks"
+	"github.com/stripe/stripe-go/v72"
+	"github.com/stripe/stripe-go/v72/webhook"
+
+	"github.com/javierlopezdeancos/stipendivm/config"
+	"github.com/javierlopezdeancos/stipendivm/inventory"
+	"github.com/javierlopezdeancos/stipendivm/payments"
+	"github.com/javierlopezdeancos/stipendivm/webhooks"
 )
 
 func main() {
@@ -59,6 +59,7 @@ func buildEcho(publicDirectory string) *echo.Echo {
 
 	e.File("/", path.Join(publicDirectory, "index.html"))
 	e.File("/.well-known/apple-developer-merchantid-domain-association", path.Join(publicDirectory, ".well-known/apple-developer-merchantid-domain-association"))
+
 	e.Static("/javascripts", path.Join(publicDirectory, "javascripts"))
 	e.Static("/stylesheets", path.Join(publicDirectory, "stylesheets"))
 	e.Static("/images", path.Join(publicDirectory, "images"))
@@ -74,24 +75,10 @@ func buildEcho(publicDirectory string) *echo.Echo {
 			return err
 		}
 
-		if !setup.ExpectedProductsExist(products) {
-			err := setup.CreateData()
-
-			if err != nil {
-				return err
-			}
-
-			products, err = inventory.ListProducts()
-
-			if err != nil {
-				return err
-			}
-		}
-
 		return c.JSON(http.StatusOK, listing{products})
 	})
 
-	e.GET("/products/:product_id/skus", func(c echo.Context) error {
+	e.GET("/products/:product-id/skus", func(c echo.Context) error {
 		skus, err := inventory.ListSKUs(c.Param("product_id"))
 
 		if err != nil {
@@ -101,7 +88,7 @@ func buildEcho(publicDirectory string) *echo.Echo {
 		return c.JSON(http.StatusOK, listing{skus})
 	})
 
-	e.GET("/products/:product_id", func(c echo.Context) error {
+	e.GET("/products/:product-id", func(c echo.Context) error {
 		product, err := inventory.RetrieveProduct(c.Param("product_id"))
 
 		if err != nil {
@@ -111,7 +98,7 @@ func buildEcho(publicDirectory string) *echo.Echo {
 		return c.JSON(http.StatusOK, product)
 	})
 
-	e.POST("/payment_intents", func(c echo.Context) error {
+	e.POST("/payment-intents", func(c echo.Context) error {
 		r := new(payments.IntentCreationRequest)
 		err := c.Bind(r)
 
@@ -130,7 +117,7 @@ func buildEcho(publicDirectory string) *echo.Echo {
 		})
 	})
 
-	e.POST("/payment_intents/:id/shipping_change", func(c echo.Context) error {
+	e.POST("/payment-intents/:id/shipping-change", func(c echo.Context) error {
 		r := new(payments.IntentShippingChangeRequest)
 		err := c.Bind(r)
 
@@ -158,7 +145,7 @@ func buildEcho(publicDirectory string) *echo.Echo {
 		PaymentIntent PaymentIntentsStatusData `json:"paymentIntent"`
 	}
 
-	e.POST("/payment_intents/:id/update_currency", func(c echo.Context) error {
+	e.POST("/payment-intents/:id/update-currency", func(c echo.Context) error {
 		r := new(payments.IntentCurrencyPaymentMethodsChangeRequest)
 		err := c.Bind(r)
 
@@ -177,7 +164,7 @@ func buildEcho(publicDirectory string) *echo.Echo {
 		})
 	})
 
-	e.GET("/payment_intents/:id/status", func(c echo.Context) error {
+	e.GET("/payment-intents/:id/status", func(c echo.Context) error {
 		pi, err := payments.RetrieveIntent(c.Param("id"))
 
 		if err != nil {
@@ -191,7 +178,7 @@ func buildEcho(publicDirectory string) *echo.Echo {
 		}
 
 		if pi.LastPaymentError != nil {
-			p.PaymentIntent.LastPaymentError = pi.LastPaymentError.Message
+			// p.PaymentIntent.LastPaymentError = pi.LastPaymentError.Message
 		}
 
 		return c.JSON(http.StatusOK, p)

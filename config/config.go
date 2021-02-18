@@ -21,6 +21,7 @@ type Config struct {
 // PaymentMethods get payments methods selected to the stripe integration
 func PaymentMethods() []string {
 	paymentMethodsString := os.Getenv("PAYMENT_METHODS")
+
 	if paymentMethodsString == "" {
 		return []string{"card"}
 	} else {
@@ -31,6 +32,7 @@ func PaymentMethods() []string {
 // Default get default values to stripe integration
 func Default() Config {
 	stripeCountry := os.Getenv("STRIPE_ACCOUNT_COUNTRY")
+
 	if stripeCountry == "" {
 		stripeCountry = "US"
 	}
