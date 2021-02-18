@@ -3,8 +3,8 @@ package payments
 import (
 	"fmt"
 
-	"github.com/stripe/stripe-go"
-	"github.com/stripe/stripe-go/paymentintent"
+	"github.com/stripe/stripe-go/v72"
+	"github.com/stripe/stripe-go/v72/paymentintent"
 
 	"github.com/javierlopezdeancos/stipendivm/config"
 	"github.com/javierlopezdeancos/stipendivm/inventory"
@@ -90,7 +90,7 @@ func ConfirmIntent(paymentIntent string, source *stripe.Source) error {
 	}
 
 	params := &stripe.PaymentIntentConfirmParams{
-		Source: stripe.String(source.ID),
+		PaymentMethod: stripe.String(source.ID),
 	}
 
 	_, err = paymentintent.Confirm(pi.ID, params)
