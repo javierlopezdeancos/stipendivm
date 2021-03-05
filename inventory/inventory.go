@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/stripe/stripe-go/v72"
+	"github.com/stripe/stripe-go/v72/price"
 	"github.com/stripe/stripe-go/v72/product"
 	"github.com/stripe/stripe-go/v72/sku"
 )
@@ -14,9 +15,9 @@ type Item struct {
 	Quantity int64  `json:"quantity"`
 }
 
-// ListProducts Products list
-func ListProducts() ([]*stripe.Product, error) {
-	products := []*stripe.Product{}
+// ListWines Wines list
+func ListWines() ([]*stripe.Product, error) {
+	wines := []*stripe.Product{}
 
 	params := &stripe.ProductListParams{}
 	params.Filters.AddFilter("limit", "", "3")
@@ -24,7 +25,7 @@ func ListProducts() ([]*stripe.Product, error) {
 	i := product.List(params)
 
 	for i.Next() {
-		products = append(products, i.Product())
+		wines = append(wines, i.Product())
 	}
 
 	err := i.Err()
@@ -33,12 +34,12 @@ func ListProducts() ([]*stripe.Product, error) {
 		return nil, fmt.Errorf("inventory: error listing products: %v", err)
 	}
 
-	return products, nil
+	return wines, nil
 }
 
-// RetrieveProduct Retrieve product from products list
-func RetrieveProduct(productID string) (*stripe.Product, error) {
-	return product.Get(productID, nil)
+// RetrieveWine Retrieve wine from wine list
+func RetrieveWine(wineID string) (*stripe.Product, error) {
+	return product.Get(wineID, nil)
 }
 
 // ListSKUs SKUs list
@@ -76,4 +77,36 @@ func CalculatePaymentAmount(items []Item) (int64, error) {
 		total += sku.Price * item.Quantity
 	}
 	return total, nil
+}
+
+// ListPrices Prices list
+func ListPrices(args ...string) ([]*stripe.Price, error) {
+	prices := []*stripe.Price{}
+
+	params := &stripe.PriceListParams{}
+	params.Filters.AddFilter("limit", "", "3")
+
+	if len(args) == 1 {
+		wineID := args[0]
+		params.Product = stripe.String(wineID)
+	}
+
+	i := price.List(params)
+
+	for i.Next() {
+		prices = append(prices, i.Price())
+	}
+
+	err := i.Err()
+
+	if err != nil {
+		return nil, fmt.Errorf("inventory: error listing products: %v", err)
+	}
+
+	return prices, nil
+}
+
+// RetrievePrice Retrieve wine from wine list
+func RetrievePrice(priceID string) (*stripe.Price, error) {
+	return price.Get(priceID, nil)
 }

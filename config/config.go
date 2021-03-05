@@ -7,42 +7,53 @@ import (
 	"github.com/javierlopezdeancos/stipendivm/inventory"
 )
 
-// Config configuration structure to our stripe integration
-type Config struct {
-	StripePublishableKey string   `json:"stripePublishableKey"`
-	StripeCountry        string   `json:"stripeCountry"`
-	Country              string   `json:"country"`
-	Currency             string   `json:"currency"`
-	PaymentMethods       []string `json:"paymentMethods"`
-
-	ShippingOptions []inventory.ShippingOption `json:"shippingOptions"`
+// Configuration type to our stripe integration
+type Configuration struct {
+	StripePublishableKey string                     `json:"stripePublishableKey"`
+	StripeCountry        string                     `json:"stripeCountry"`
+	Country              string                     `json:"country"`
+	Currency             string                     `json:"currency"`
+	PaymentMethods       []string                   `json:"paymentMethods"`
+	ShippingOptions      []inventory.ShippingOption `json:"shippingOptions"`
 }
 
-// PaymentMethods get payments methods selected to the stripe integration
-func PaymentMethods() []string {
+// GetPaymentMethods get payments methods selected to the stripe integration
+func GetPaymentMethods() []string {
 	paymentMethodsString := os.Getenv("PAYMENT_METHODS")
 
 	if paymentMethodsString == "" {
 		return []string{"card"}
-	} else {
-		return strings.Split(paymentMethodsString, ", ")
 	}
+
+	return strings.Split(paymentMethodsString, ", ")
 }
 
 // Default get default values to stripe integration
-func Default() Config {
+func Default() Configuration {
 	stripeCountry := os.Getenv("STRIPE_ACCOUNT_COUNTRY")
+	country := os.Getenv("COUNTRY")
+	currency := os.Getenv("CURRENCY")
 
 	if stripeCountry == "" {
-		stripeCountry = "US"
+		stripeCountry = "SP"
 	}
 
-	return Config{
+	if country == "" {
+		country = "SP"
+	}
+
+	if currency == "" {
+		currency = "eur"
+	}
+
+	c := Configuration{
 		StripePublishableKey: os.Getenv("STRIPE_PUBLISHABLE_KEY"),
 		StripeCountry:        stripeCountry,
-		Country:              "SP",
-		Currency:             "eur",
-		PaymentMethods:       PaymentMethods(),
+		Country:              country,
+		Currency:             currency,
+		PaymentMethods:       GetPaymentMethods(),
 		ShippingOptions:      inventory.ShippingOptions(),
 	}
+
+	return c
 }

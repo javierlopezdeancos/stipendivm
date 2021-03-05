@@ -1,10 +1,8 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
@@ -14,24 +12,33 @@ import (
 	"github.com/labstack/echo/middleware"
 	"github.com/labstack/gommon/log"
 	"github.com/stripe/stripe-go/v72"
-	"github.com/stripe/stripe-go/v72/webhook"
 
-	"github.com/javierlopezdeancos/stipendivm/config"
+	"github.com/javierlopezdeancos/stipendivm/customers"
 	"github.com/javierlopezdeancos/stipendivm/inventory"
 	"github.com/javierlopezdeancos/stipendivm/payments"
-	"github.com/javierlopezdeancos/stipendivm/webhooks"
 )
 
 func main() {
-	rootDirectory := flag.String("root-directory", "", "Root directory of the Stipendivm server to Quantvm stripe payments")
+	rootDirectory := flag.String("root", "./", "Root directory of the Stipendivm server to Quantvm stripe payments")
+	environment := flag.String("env", "dev", "Type of environment to start Stipendivm server")
 
 	flag.Parse()
 
 	if *rootDirectory == "" {
-		panic("-root-directory is a required argument")
+		*rootDirectory = "./"
 	}
 
-	err := godotenv.Load(path.Join(*rootDirectory, ".env"))
+	if *environment == "" {
+		*environment = "dev"
+	}
+
+	var err error
+
+	if *environment == environments["development"] {
+		err = godotenv.Load(path.Join(*rootDirectory, ".env.development"))
+	} else if *environment == environments["production"] {
+		err = godotenv.Load(path.Join(*rootDirectory, ".env"))
+	}
 
 	if err != nil {
 		panic(fmt.Sprintf("error loading .env: %v", err))
@@ -44,207 +51,221 @@ func main() {
 	}
 
 	publicDirectory := path.Join(*rootDirectory, "public")
-	e := buildEcho(publicDirectory)
-	e.Logger.Fatal(e.Start(":4567"))
+	server := getServer(publicDirectory, environment)
+	server.Logger.Fatal(server.Start(":4567"))
 }
 
 type listing struct {
 	Data interface{} `json:"data"`
 }
 
-func buildEcho(publicDirectory string) *echo.Echo {
-	e := echo.New()
-	e.Use(middleware.Logger())
-	e.Logger.SetLevel(log.DEBUG)
+// Types to different environments
+var Types = map[string]string{
+	"test":       "test",
+	"production": "prod",
+}
 
-	e.File("/", path.Join(publicDirectory, "index.html"))
-	e.File("/.well-known/apple-developer-merchantid-domain-association", path.Join(publicDirectory, ".well-known/apple-developer-merchantid-domain-association"))
+var environments = map[string]string{
+	"development": "dev",
+	"production":  "prod",
+}
 
-	e.Static("/javascripts", path.Join(publicDirectory, "javascripts"))
-	e.Static("/stylesheets", path.Join(publicDirectory, "stylesheets"))
-	e.Static("/images", path.Join(publicDirectory, "images"))
+func getWines(c echo.Context) error {
+	wines, err := inventory.ListWines()
 
-	e.GET("/config", func(c echo.Context) error {
-		return c.JSON(http.StatusOK, config.Default())
-	})
-
-	e.GET("/products", func(c echo.Context) error {
-		products, err := inventory.ListProducts()
-
-		if err != nil {
-			return err
-		}
-
-		return c.JSON(http.StatusOK, listing{products})
-	})
-
-	e.GET("/products/:product-id/skus", func(c echo.Context) error {
-		skus, err := inventory.ListSKUs(c.Param("product_id"))
-
-		if err != nil {
-			return err
-		}
-
-		return c.JSON(http.StatusOK, listing{skus})
-	})
-
-	e.GET("/products/:product-id", func(c echo.Context) error {
-		product, err := inventory.RetrieveProduct(c.Param("product_id"))
-
-		if err != nil {
-			return err
-		}
-
-		return c.JSON(http.StatusOK, product)
-	})
-
-	e.POST("/payment-intents", func(c echo.Context) error {
-		r := new(payments.IntentCreationRequest)
-		err := c.Bind(r)
-
-		if err != nil {
-			return err
-		}
-
-		pi, err := payments.CreateIntent(r)
-
-		if err != nil {
-			return err
-		}
-
-		return c.JSON(http.StatusOK, map[string]*stripe.PaymentIntent{
-			"paymentIntent": pi,
-		})
-	})
-
-	e.POST("/payment-intents/:id/shipping-change", func(c echo.Context) error {
-		r := new(payments.IntentShippingChangeRequest)
-		err := c.Bind(r)
-
-		if err != nil {
-			return err
-		}
-
-		pi, err := payments.UpdateShipping(c.Param("id"), r)
-
-		if err != nil {
-			return err
-		}
-
-		return c.JSON(http.StatusOK, map[string]*stripe.PaymentIntent{
-			"paymentIntent": pi,
-		})
-	})
-
-	type PaymentIntentsStatusData struct {
-		Status           string `json:"status"`
-		LastPaymentError string `json:"last_payment_error,omitempty"`
+	if err != nil {
+		return err
 	}
 
-	type PaymentIntentsStatus struct {
-		PaymentIntent PaymentIntentsStatusData `json:"paymentIntent"`
+	return c.JSON(http.StatusOK, listing{wines})
+}
+
+func getWineSkus(c echo.Context) error {
+	skus, err := inventory.ListSKUs(c.Param("wine_id"))
+
+	if err != nil {
+		return err
 	}
 
-	e.POST("/payment-intents/:id/update-currency", func(c echo.Context) error {
-		r := new(payments.IntentCurrencyPaymentMethodsChangeRequest)
-		err := c.Bind(r)
+	return c.JSON(http.StatusOK, listing{skus})
+}
 
-		if err != nil {
-			return err
-		}
+func getWine(c echo.Context) error {
+	wine, err := inventory.RetrieveWine(c.Param("wine_id"))
 
-		pi, err := payments.UpdateCurrencyPaymentMethod(c.Param("id"), r)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, err)
+	}
 
-		if err != nil {
-			return err
-		}
+	return c.JSON(http.StatusOK, wine)
+}
 
-		return c.JSON(http.StatusOK, map[string]*stripe.PaymentIntent{
-			"paymentIntent": pi,
-		})
+func getWinePrice(c echo.Context) error {
+	price, err := inventory.ListPrices(c.Param("wine_id"))
+
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, price)
+}
+
+func getPrices(c echo.Context) error {
+	prices, err := inventory.ListPrices()
+
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, listing{prices})
+}
+
+func getPaymentIntent(c echo.Context) error {
+	r := new(payments.IntentCreationRequest)
+	err := c.Bind(r)
+
+	if err != nil {
+		return err
+	}
+
+	pi, err := payments.CreateIntent(r)
+
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, map[string]*stripe.PaymentIntent{
+		"paymentIntent": pi,
 	})
+}
 
-	e.GET("/payment-intents/:id/status", func(c echo.Context) error {
-		pi, err := payments.RetrieveIntent(c.Param("id"))
+func getPaymentIntentShippingChange(c echo.Context) error {
+	r := new(payments.IntentShippingChangeRequest)
+	err := c.Bind(r)
 
-		if err != nil {
-			return err
-		}
+	if err != nil {
+		return err
+	}
 
-		p := PaymentIntentsStatus{
-			PaymentIntent: PaymentIntentsStatusData{
-				Status: string(pi.Status),
-			},
-		}
+	pi, err := payments.UpdateShipping(c.Param("id"), r)
 
-		if pi.LastPaymentError != nil {
-			// p.PaymentIntent.LastPaymentError = pi.LastPaymentError.Message
-		}
+	if err != nil {
+		return err
+	}
 
-		return c.JSON(http.StatusOK, p)
+	return c.JSON(http.StatusOK, map[string]*stripe.PaymentIntent{
+		"paymentIntent": pi,
 	})
+}
 
-	e.POST("/webhook", func(c echo.Context) error {
-		request := c.Request()
-		payload, err := ioutil.ReadAll(request.Body)
+func getPaymentIntentStatus(c echo.Context) error {
+	pi, err := payments.RetrieveIntent(c.Param("id"))
 
-		if err != nil {
-			return err
-		}
+	if err != nil {
+		return err
+	}
 
-		var event stripe.Event
+	p := payments.PaymentIntentsStatus{
+		PaymentIntent: payments.PaymentIntentsStatusData{
+			Status: string(pi.Status),
+		},
+	}
 
-		webhookSecret := os.Getenv("STRIPE_WEBHOOK_SECRET")
+	if pi.LastPaymentError != nil {
+		// p.PaymentIntent.LastPaymentError = pi.LastPaymentError.Message
+	}
 
-		if webhookSecret != "" {
-			event, err = webhook.ConstructEvent(payload, request.Header.Get("Stripe-Signature"), webhookSecret)
+	return c.JSON(http.StatusOK, p)
+}
 
-			if err != nil {
-				return err
-			}
-		} else {
-			err := json.Unmarshal(payload, &event)
+func updatePaymentIntentCurrency(c echo.Context) error {
+	r := new(payments.IntentCurrencyPaymentMethodsChangeRequest)
+	err := c.Bind(r)
 
-			if err != nil {
-				return err
-			}
-		}
+	if err != nil {
+		return err
+	}
 
-		objectType := event.Data.Object["object"].(string)
+	pi, err := payments.UpdateCurrencyPaymentMethod(c.Param("id"), r)
 
-		var handled bool
+	if err != nil {
+		return err
+	}
 
-		switch objectType {
-		case "payment_intent":
-			var pi *stripe.PaymentIntent
-			err = json.Unmarshal(event.Data.Raw, &pi)
-
-			if err != nil {
-				return err
-			}
-
-			handled, err = webhooks.HandlePaymentIntent(event, pi)
-		case "source":
-			var source *stripe.Source
-			err := json.Unmarshal(event.Data.Raw, &source)
-
-			if err != nil {
-				return err
-			}
-
-			handled, err = webhooks.HandleSource(event, source)
-		}
-
-		if err != nil {
-			return err
-		}
-
-		if !handled {
-			fmt.Printf("🔔  Webhook received and not handled! %s\n", event.Type)
-		}
-
-		return nil
+	return c.JSON(http.StatusOK, map[string]*stripe.PaymentIntent{
+		"paymentIntent": pi,
 	})
+}
 
-	return e
+func updateCustomer(c echo.Context) error {
+	fmt.Println()
+	fmt.Println("\n🔵 [INFO] Getting request to create customer...")
+	fmt.Println()
+
+	customer := new(customers.Customer)
+
+	if err := c.Bind(customer); err != nil {
+		return c.JSON(http.StatusBadRequest, err)
+	}
+
+	newAddress := customers.Address{
+		City:       customer.Address.City,
+		Country:    customer.Address.Country,
+		PostalCode: customer.Address.PostalCode,
+		Province:   customer.Address.Province,
+		Street:     customer.Address.Street,
+	}
+
+	newCustomer := customers.Customer{
+		Address:   newAddress,
+		Company:   customer.Company,
+		Email:     customer.Email,
+		FirstName: customer.FirstName,
+		LastName:  customer.LastName,
+		Lgpd:      customer.Lgpd,
+		NifCif:    customer.NifCif,
+		Phone:     customer.Phone,
+	}
+
+	customerCreated, err := customers.Create(newCustomer)
+
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, customerCreated)
+}
+
+func getServer(publicDirectory string, environment *string) *echo.Echo {
+	server := echo.New()
+
+	server.Use(middleware.Logger())
+
+	if *environment == environments["development"] {
+		server.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+			AllowOrigins: []string{"*"},
+		}))
+	}
+
+	server.Logger.SetLevel(log.DEBUG)
+
+	server.File("/", path.Join(publicDirectory, "index.html"))
+	server.File("/.well-known/apple-developer-merchantid-domain-association", path.Join(publicDirectory, ".well-known/apple-developer-merchantid-domain-association"))
+
+	server.Static("/javascripts", path.Join(publicDirectory, "javascripts"))
+	server.Static("/stylesheets", path.Join(publicDirectory, "stylesheets"))
+	server.Static("/images", path.Join(publicDirectory, "images"))
+
+	server.GET("/wines", getWines)
+	server.GET("/wines/:wine_id/skus", getWineSkus)
+	server.GET("/wines/:wine_id", getWine)
+	server.GET("/prices", getPrices)
+	server.GET("/prices/:wine_id", getWinePrice)
+	server.POST("/payment-intents", getPaymentIntent)
+	server.POST("/payment-intents/:id/shipping-change", getPaymentIntentShippingChange)
+	server.POST("/payment-intents/:id/currency", updatePaymentIntentCurrency)
+	server.GET("/payment-intents/:id/status", getPaymentIntentStatus)
+	server.POST("/customers", updateCustomer)
+
+	return server
 }

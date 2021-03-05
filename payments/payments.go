@@ -10,6 +10,17 @@ import (
 	"github.com/javierlopezdeancos/stipendivm/inventory"
 )
 
+// PaymentIntentsStatusData Payment Intent status data type
+type PaymentIntentsStatusData struct {
+	Status           string `json:"status"`
+	LastPaymentError string `json:"last_payment_error,omitempty"`
+}
+
+// PaymentIntentsStatus Payment Intent status type
+type PaymentIntentsStatus struct {
+	PaymentIntent PaymentIntentsStatusData `json:"paymentIntent"`
+}
+
 // IntentCreationRequest Intent creation request
 type IntentCreationRequest struct {
 	Currency string           `json:"currency"`
@@ -37,7 +48,7 @@ func CreateIntent(r *IntentCreationRequest) (*stripe.PaymentIntent, error) {
 	}
 
 	// build initial payment methods which should exclude currency specific ones
-	initPaymentMethods := config.PaymentMethods()
+	initPaymentMethods := config.GetPaymentMethods()
 	removeVal(initPaymentMethods, "au_becs_debit")
 
 	params := &stripe.PaymentIntentParams{

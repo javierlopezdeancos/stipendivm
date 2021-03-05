@@ -1,0 +1,21 @@
+### Create customer
+
+POST http://localhost:4567/customers HTTP/1.1
+content-type: application/json
+
+{
+  "address": {
+    "city": "45005",
+    "country": "España",
+    "postalCode": "45005",
+    "province": "lol",
+    "street": "jojoi"
+  },
+  "company": "",
+  "email": "l@l.es",
+  "firstName": "lol",
+  "lastName": "lol",
+  "lgpd": "false",
+  "nifCif": "03873692D",
+  "phone": "6678678"
+}
