@@ -48,6 +48,7 @@ func ListSKUs(productID string) ([]*stripe.SKU, error) {
 
 	params := &stripe.SKUListParams{}
 	params.Filters.AddFilter("limit", "", "1")
+
 	i := sku.List(params)
 
 	for i.Next() {
@@ -67,15 +68,17 @@ func ListSKUs(productID string) ([]*stripe.SKU, error) {
 // CalculatePaymentAmount Calc payment amount
 func CalculatePaymentAmount(items []Item) (int64, error) {
 	total := int64(0)
+
 	for _, item := range items {
-		sku, err := sku.Get(item.Parent, nil)
+		prices, err := ListPrices(item.Parent)
 
 		if err != nil {
 			return 0, fmt.Errorf("inventory: error getting SKU for price: %v", err)
 		}
 
-		total += sku.Price * item.Quantity
+		total += prices[0].UnitAmount * item.Quantity
 	}
+
 	return total, nil
 }
 

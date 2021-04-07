@@ -23,7 +23,7 @@ type Customer struct {
 	Email     string  `json:"email"`
 	FirstName string  `json:"firstName"`
 	LastName  string  `json:"lastName"`
-	Lgpd      string  `json:"lgpd"`
+	Lgpd      bool    `json:"lgpd"`
 	NifCif    string  `json:"nifCif"`
 	Phone     string  `json:"phone"`
 }
@@ -58,9 +58,12 @@ func Create(newCustomer Customer) (*stripe.Customer, error) {
 	}
 
 	metadata := map[string]string{
-		"lgpd":    newCustomer.Lgpd,
 		"nifCif":  newCustomer.NifCif,
 		"company": newCustomer.Company,
+	}
+
+	if newCustomer.Lgpd {
+		metadata["lgpd"] = "true"
 	}
 
 	for key, value := range metadata {

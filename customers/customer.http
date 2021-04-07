@@ -15,7 +15,7 @@ content-type: application/json
   "email": "l@l.es",
   "firstName": "lol",
   "lastName": "lol",
-  "lgpd": "false",
+  "lgpd": false,
   "nifCif": "03873692D",
   "phone": "6678678"
 }

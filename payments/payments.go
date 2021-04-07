@@ -23,8 +23,9 @@ type PaymentIntentsStatus struct {
 
 // IntentCreationRequest Intent creation request
 type IntentCreationRequest struct {
-	Currency string           `json:"currency"`
-	Items    []inventory.Item `json:"items"`
+	Currency   string           `json:"currency"`
+	CustomerID string           `json:"customerId"`
+	Items      []inventory.Item `json:"items"`
 }
 
 // IntentShippingChangeRequest Intent shipping change request
@@ -55,6 +56,7 @@ func CreateIntent(r *IntentCreationRequest) (*stripe.PaymentIntent, error) {
 		Amount:             stripe.Int64(amount),
 		Currency:           stripe.String(r.Currency),
 		PaymentMethodTypes: stripe.StringSlice(initPaymentMethods),
+		Customer:           stripe.String(r.CustomerID),
 	}
 
 	pi, err := paymentintent.New(params)
