@@ -7,6 +7,8 @@ import (
 	"github.com/stripe/stripe-go/v72/price"
 	"github.com/stripe/stripe-go/v72/product"
 	"github.com/stripe/stripe-go/v72/sku"
+
+	"github.com/javierlopezdeancos/stipendivm/config"
 )
 
 // Item Intent payment item
@@ -21,6 +23,12 @@ func ListWines() ([]*stripe.Product, error) {
 
 	params := &stripe.ProductListParams{}
 	params.Filters.AddFilter("limit", "", "3")
+
+	if config.Environment == config.Environments["development"] {
+		params.Filters.AddFilter("livemode", "", "false")
+	} else if config.Environment == config.Environments["production"] {
+		params.Filters.AddFilter("livemode", "", "true")
+	}
 
 	i := product.List(params)
 

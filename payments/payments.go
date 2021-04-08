@@ -30,8 +30,8 @@ type IntentCreationRequest struct {
 
 // IntentShippingChangeRequest Intent shipping change request
 type IntentShippingChangeRequest struct {
-	Items          []inventory.Item         `json:"items"`
-	ShippingOption inventory.ShippingOption `json:"shippingOption"`
+	Items          []inventory.Item      `json:"items"`
+	ShippingOption config.ShippingOption `json:"shippingOption"`
 }
 
 // IntentCurrencyPaymentMethodsChangeRequest Intent currency payment methods change request
@@ -134,7 +134,7 @@ func UpdateShipping(paymentIntent string, r *IntentShippingChangeRequest) (*stri
 		return nil, fmt.Errorf("payments: error computing payment amount: %v", err)
 	}
 
-	shippingCost, ok := inventory.GetShippingCost(r.ShippingOption.ID)
+	shippingCost, ok := config.GetShippingCost(r.ShippingOption.ID)
 
 	if !ok {
 		return nil, fmt.Errorf("payments: no cost found for shipping id %q", r.ShippingOption.ID)

@@ -13,6 +13,7 @@ import (
 	"github.com/labstack/gommon/log"
 	"github.com/stripe/stripe-go/v72"
 
+	"github.com/javierlopezdeancos/stipendivm/config"
 	"github.com/javierlopezdeancos/stipendivm/customers"
 	"github.com/javierlopezdeancos/stipendivm/inventory"
 	"github.com/javierlopezdeancos/stipendivm/payments"
@@ -21,6 +22,7 @@ import (
 func main() {
 	rootDirectory := flag.String("root", "./", "Root directory of the Stipendivm server to Quantvm stripe payments")
 	environment := flag.String("env", "dev", "Type of environment to start Stipendivm server")
+	config.Environment = *environment
 
 	flag.Parse()
 
@@ -28,15 +30,15 @@ func main() {
 		*rootDirectory = "./"
 	}
 
-	if *environment == "" {
-		*environment = "dev"
+	if config.Environment == "" {
+		config.Environment = config.Environments["development"]
 	}
 
 	var err error
 
-	if *environment == environments["development"] {
+	if config.Environment == config.Environments["development"] {
 		err = godotenv.Load(path.Join(*rootDirectory, ".env.development"))
-	} else if *environment == environments["production"] {
+	} else if config.Environment == config.Environments["production"] {
 		err = godotenv.Load(path.Join(*rootDirectory, ".env"))
 	}
 
@@ -50,8 +52,8 @@ func main() {
 		panic("STRIPE_SECRET_KEY must be in environment")
 	}
 
-	publicDirectory := path.Join(*rootDirectory, "public")
-	server := getServer(publicDirectory, environment)
+	config.PublicDirectory = path.Join(*rootDirectory, "public")
+	server := getServer()
 	server.Logger.Fatal(server.Start(":4567"))
 }
 
@@ -63,11 +65,6 @@ type listing struct {
 var Types = map[string]string{
 	"test":       "test",
 	"production": "prod",
-}
-
-var environments = map[string]string{
-	"development": "dev",
-	"production":  "prod",
 }
 
 func getWines(c echo.Context) error {
@@ -236,12 +233,12 @@ func updateCustomer(c echo.Context) error {
 	return c.JSON(http.StatusOK, customerCreated)
 }
 
-func getServer(publicDirectory string, environment *string) *echo.Echo {
+func getServer() *echo.Echo {
 	server := echo.New()
 
 	server.Use(middleware.Logger())
 
-	if *environment == environments["development"] {
+	if config.Environment == config.Environments["development"] {
 		server.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 			AllowOrigins: []string{"*"},
 		}))
@@ -249,12 +246,12 @@ func getServer(publicDirectory string, environment *string) *echo.Echo {
 
 	server.Logger.SetLevel(log.DEBUG)
 
-	server.File("/", path.Join(publicDirectory, "index.html"))
-	server.File("/.well-known/apple-developer-merchantid-domain-association", path.Join(publicDirectory, ".well-known/apple-developer-merchantid-domain-association"))
+	server.File("/", path.Join(config.PublicDirectory, "index.html"))
+	server.File("/.well-known/apple-developer-merchantid-domain-association", path.Join(config.PublicDirectory, ".well-known/apple-developer-merchantid-domain-association"))
 
-	server.Static("/javascripts", path.Join(publicDirectory, "javascripts"))
-	server.Static("/stylesheets", path.Join(publicDirectory, "stylesheets"))
-	server.Static("/images", path.Join(publicDirectory, "images"))
+	server.Static("/javascripts", path.Join(config.PublicDirectory, "javascripts"))
+	server.Static("/stylesheets", path.Join(config.PublicDirectory, "stylesheets"))
+	server.Static("/images", path.Join(config.PublicDirectory, "images"))
 
 	server.GET("/wines", getWines)
 	server.GET("/wines/:wine_id/skus", getWineSkus)
