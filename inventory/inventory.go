@@ -23,12 +23,7 @@ func ListWines() ([]*stripe.Product, error) {
 
 	params := &stripe.ProductListParams{}
 	params.Filters.AddFilter("limit", "", "3")
-
-	if config.Environment == config.Environments["development"] {
-		params.Filters.AddFilter("livemode", "", "false")
-	} else if config.Environment == config.Environments["production"] {
-		params.Filters.AddFilter("livemode", "", "true")
-	}
+	params.Filters.AddFilter("active", "", "true")
 
 	i := product.List(params)
 
@@ -40,6 +35,30 @@ func ListWines() ([]*stripe.Product, error) {
 
 	if err != nil {
 		return nil, fmt.Errorf("inventory: error listing products: %v", err)
+	}
+
+	if config.Environment == config.Environments["development"] {
+		winesInDevelopmentEnvironment := []*stripe.Product{}
+
+		for _, wine := range wines {
+			if wine.Livemode {
+				continue
+			}
+
+			winesInDevelopmentEnvironment = append(winesInDevelopmentEnvironment, wine)
+		}
+
+		return winesInDevelopmentEnvironment, nil
+	} else if config.Environment == config.Environments["production"] {
+		winesInProductionEnvironment := []*stripe.Product{}
+
+		for _, wine := range wines {
+			if wine.Livemode {
+				winesInProductionEnvironment = append(winesInProductionEnvironment, wine)
+			}
+		}
+
+		return winesInProductionEnvironment, nil
 	}
 
 	return wines, nil
