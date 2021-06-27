@@ -1,0 +1,47 @@
+### Create a success payment intent
+
+POST http://localhost:4567/payment-intents HTTP/1.1
+content-type: application/json
+
+{
+  "currency": "eur",
+  "customerId": "cus_JEiHlFfHiKn9g6",
+  "items":[
+    {
+      "parent":"product-wine-bottle-75cl-cristal-sel-d-aiz-yenda-albarinio-godello",
+      "quantity": 2
+    }
+  ]
+}
+
+### Create an error when create payment intent because a wine has not stock enought
+
+POST http://localhost:4567/payment-intents HTTP/1.1
+content-type: application/json
+
+{
+  "currency": "eur",
+  "customerId": "cus_JEiHlFfHiKn9g6",
+  "items":[
+    {
+      "parent":"product-wine-bottle-75cl-cristal-sel-d-aiz-yenda-albarinio-godello",
+      "quantity": 12
+    }
+  ]
+}
+
+### Create an error when create payment intent because a wine has not quantity selected more than 1 bottle
+
+POST http://localhost:4567/payment-intents HTTP/1.1
+content-type: application/json
+
+{
+  "currency": "eur",
+  "customerId": "cus_JEiHlFfHiKn9g6",
+  "items":[
+    {
+      "parent":"product-wine-bottle-75cl-cristal-sel-d-aiz-yenda-albarinio-godello",
+      "quantity": 0
+    }
+  ]
+}

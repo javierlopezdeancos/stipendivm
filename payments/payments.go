@@ -2,6 +2,7 @@ package payments
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/stripe/stripe-go/v72"
 	"github.com/stripe/stripe-go/v72/paymentintent"
@@ -41,8 +42,8 @@ type IntentCurrencyPaymentMethodsChangeRequest struct {
 }
 
 // CreateIntent Create intent
-func CreateIntent(r *IntentCreationRequest) (*stripe.PaymentIntent, error) {
-	amount, err := inventory.CalculatePaymentAmount(r.Items)
+func CreateIntent(icr *IntentCreationRequest) (*stripe.PaymentIntent, error) {
+	amount, err := inventory.CalculatePaymentAmount(icr.Items)
 
 	if err != nil {
 		return nil, fmt.Errorf("payments: error computing payment amount: %v", err)
@@ -54,9 +55,14 @@ func CreateIntent(r *IntentCreationRequest) (*stripe.PaymentIntent, error) {
 
 	params := &stripe.PaymentIntentParams{
 		Amount:             stripe.Int64(amount),
-		Currency:           stripe.String(r.Currency),
+		Currency:           stripe.String(icr.Currency),
 		PaymentMethodTypes: stripe.StringSlice(initPaymentMethods),
-		Customer:           stripe.String(r.CustomerID),
+		Customer:           stripe.String(icr.CustomerID),
+	}
+
+	for _, i := range icr.Items {
+		quantity := strconv.FormatInt(i.Quantity, 10)
+		params.AddMetadata(i.Parent, quantity)
 	}
 
 	pi, err := paymentintent.New(params)

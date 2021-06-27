@@ -40,21 +40,21 @@ func ListWines() ([]*stripe.Product, error) {
 	if config.Environment == config.Environments["development"] {
 		winesInDevelopmentEnvironment := []*stripe.Product{}
 
-		for _, wine := range wines {
-			if wine.Livemode {
+		for _, w := range wines {
+			if w.Livemode {
 				continue
 			}
 
-			winesInDevelopmentEnvironment = append(winesInDevelopmentEnvironment, wine)
+			winesInDevelopmentEnvironment = append(winesInDevelopmentEnvironment, w)
 		}
 
 		return winesInDevelopmentEnvironment, nil
 	} else if config.Environment == config.Environments["production"] {
 		winesInProductionEnvironment := []*stripe.Product{}
 
-		for _, wine := range wines {
-			if wine.Livemode {
-				winesInProductionEnvironment = append(winesInProductionEnvironment, wine)
+		for _, w := range wines {
+			if w.Livemode {
+				winesInProductionEnvironment = append(winesInProductionEnvironment, w)
 			}
 		}
 
@@ -67,6 +67,19 @@ func ListWines() ([]*stripe.Product, error) {
 // RetrieveWine Retrieve wine from wine list
 func RetrieveWine(wineID string) (*stripe.Product, error) {
 	return product.Get(wineID, nil)
+}
+
+// UpdateWineStock Update wine stock
+func UpdateWineStock(wineID string, stock string) (*stripe.Product, error) {
+	wine, err := RetrieveWine(wineID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	wine.Metadata["quantity"] = stock
+
+	return wine, nil
 }
 
 // ListSKUs SKUs list

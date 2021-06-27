@@ -5,6 +5,7 @@ import (
 
 	"github.com/stripe/stripe-go/v72"
 
+	"github.com/javierlopezdeancos/stipendivm/inventory"
 	"github.com/javierlopezdeancos/stipendivm/payments"
 )
 
@@ -13,6 +14,11 @@ func HandlePaymentIntent(event stripe.Event, pi *stripe.PaymentIntent) (bool, er
 	switch event.Type {
 	case "payment_intent.succeeded":
 		fmt.Printf("🔔  Webhook received! Payment for PaymentIntent %s succeeded\n", pi.ID)
+
+		for wineId, wineQuantity := range pi.Metadata {
+			inventory.UpdateWineStock(wineId, wineQuantity)
+		}
+
 		return true, nil
 
 	case "payment_intent.payment_failed":

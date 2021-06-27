@@ -1,6 +1,6 @@
-# Stripe Payments Demo - Go Server
+# Stipendivm, the Quantvm stripe payments go server
 
-This demo uses a simple [Echo](https://echo.labstack.com/) application as the server.
+This server uses a simple [Echo](https://echo.labstack.com/) application as the server.
 
 ## Payments Integration
 
@@ -26,7 +26,7 @@ cp .env.example .env
 Run the application from this directory (after running `cd server/go`):
 
 ```
-go run app.go -root-directory=$(realpath ../..)
+go run app.go
 ```
 
 You should now see it running on [`http://localhost:4567/`](http://localhost:4567/)
@@ -40,7 +40,7 @@ We can use the Stripe CLI to forward webhook events to our local development ser
 - Run the [`listen`](https://github.com/stripe/stripe-cli#listen) command to forward the webhooks to localhost:
 
 ```
-stripe listen --forward-to http://localhost:4567/webhook
+stripe listen --forward-to http://localhost:4567/webhook/shopping-cart
 ```
 
 > **Note:** You do not need to configure any webhook endpoints in your Dashboard to receive webhooks with the CLI.
@@ -50,3 +50,9 @@ The Stripe CLI will let you know that webhook forwarding is ready and output you
     > Ready! Your webhook signing secret is whsec_xxx
 
 Please copy the webhook signing secret (`whsec_xxx`) to your `.env` file.
+
+Run the webhook event that you want to trigger
+
+```
+stripe trigger payment_intent.succeeded
+```
