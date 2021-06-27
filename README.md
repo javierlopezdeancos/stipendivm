@@ -1,4 +1,9 @@
-# Stipendivm, the Quantvm stripe payments go server
+![logo](./README/logo.png)
+
+
+# Quantvm stripe payments go server
+
+Based in [Stripe payment demo](https://github.com/stripe/stripe-payments-demo/tree/master/server/go)
 
 This server uses a simple [Echo](https://echo.labstack.com/) application as the server.
 
