@@ -22,3 +22,10 @@ jobs:
         heroku_app_name: ${{ secrets.HEROKU_APP_NAME }}
         heroku_email: ${{ secrets.HEROKU_EMAIL }}
         usedocker: true
+      env:
+          NODE_ENV: production
+          STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_SHOPPING_CART_WEBHOOK_SECRET: ${{ secrets.STRIPE_SHOPPING_CART_WEBHOOK_SECRET }}
+          STRIPE_ACCOUNT_COUNTRY: ${{ secrets.STRIPE_ACCOUNT_COUNTRY }}
+          PAYMENT_METHODS: ${{ secrets.PAYMENT_METHODS }}
