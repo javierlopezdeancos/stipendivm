@@ -20,8 +20,8 @@ COPY . .
 # Build the application
 RUN go build -o app .
 
-# Move to /dist directory as the place for resulting binary folder
-WORKDIR /dist
+# Move to /bin directory as the place for resulting binary folder
+WORKDIR /bin
 
 # Move env files to dist directory
 COPY .env .
@@ -34,4 +34,4 @@ RUN cp /build/app .
 EXPOSE 4567
 
 # Command to run when starting the container
-CMD ["/dist/app"]
+CMD ["/bin/app"]

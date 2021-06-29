@@ -36,6 +36,14 @@ go run app.go
 
 You should now see it running on [`http://localhost:4567/`](http://localhost:4567/)
 
+### Start in dev environment
+
+You should have an `.env` file
+
+```
+go run app.go -env "dev"
+```
+
 ### Testing Webhooks
 
 We can use the Stripe CLI to forward webhook events to our local development server:

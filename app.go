@@ -28,7 +28,6 @@ import (
 func main() {
 	rootDirectory := flag.String("root", "./", "Root directory of the Stipendivm server to Quantvm stripe payments")
 	environment := flag.String("env", "dev", "Type of environment to start Stipendivm server")
-	config.Environment = *environment
 
 	flag.Parse()
 
@@ -36,20 +35,10 @@ func main() {
 		*rootDirectory = "./"
 	}
 
-	if config.Environment == "" {
-		config.Environment = config.Environments["development"]
-	}
+	fmt.Println(*environment)
 
-	var err error
-
-	if config.Environment == config.Environments["development"] {
-		err = godotenv.Load(path.Join(*rootDirectory, ".env.development"))
-	} else if config.Environment == config.Environments["production"] {
-		err = godotenv.Load(path.Join(*rootDirectory, ".env"))
-	}
-
-	if err != nil {
-		panic(fmt.Sprintf("error loading .env: %v", err))
+	if *environment == config.Environments["development"] {
+		godotenv.Load(path.Join(*rootDirectory, ".env"))
 	}
 
 	stripe.Key = os.Getenv("STRIPE_SECRET_KEY")
