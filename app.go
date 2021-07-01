@@ -52,7 +52,7 @@ func main() {
 
 	port := os.Getenv("PORT")
 
-	if stripe.Key == "" {
+	if port == "" {
 		server.Logger.Fatal(server.Start(":4567"))
 	}
 
