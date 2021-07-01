@@ -49,7 +49,14 @@ func main() {
 
 	config.PublicDirectory = path.Join(*rootDirectory, "public")
 	server := getServer()
-	server.Logger.Fatal(server.Start(":4567"))
+
+	port := os.Getenv("PORT")
+
+	if stripe.Key == "" {
+		server.Logger.Fatal(server.Start(":4567"))
+	}
+
+	server.Logger.Fatal(server.Start(":" + port))
 }
 
 type listing struct {
