@@ -400,6 +400,11 @@ func getServer() *echo.Echo {
 		}))
 	}
 
+	// Set quantvm.es domain after check
+	server.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"*"},
+	}))
+
 	server.Logger.SetLevel(log.DEBUG)
 
 	server.File("/", path.Join(config.PublicDirectory, "index.html"))
